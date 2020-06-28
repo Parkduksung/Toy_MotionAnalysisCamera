@@ -1,0 +1,2 @@
+rootProject.name='MotionAnalysisCamera'
+include ':app'
