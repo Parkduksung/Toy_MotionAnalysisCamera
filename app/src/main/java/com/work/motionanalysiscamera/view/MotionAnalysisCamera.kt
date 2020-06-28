@@ -1,9 +1,10 @@
-package com.work.motionanalysiscamera
+package com.work.motionanalysiscamera.view
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.work.motionanalysiscamera.R
 
-class MainActivity : AppCompatActivity() {
+class MotionAnalysisCamera : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
