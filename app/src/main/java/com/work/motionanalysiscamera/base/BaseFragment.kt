@@ -16,7 +16,7 @@ abstract class BaseFragment<B : ViewBinding>(
 
     private var _binding: B? = null
 
-    protected val binding get() = _binding
+    protected val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,7 +36,12 @@ abstract class BaseFragment<B : ViewBinding>(
             this.root.setOnTouchListener { _, _ -> true }
         }
 
-        return binding?.root
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     abstract fun onBackPressed()
