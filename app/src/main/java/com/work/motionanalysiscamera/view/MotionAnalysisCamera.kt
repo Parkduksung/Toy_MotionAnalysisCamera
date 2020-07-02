@@ -1,15 +1,18 @@
 package com.work.motionanalysiscamera.view
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.drawToBitmap
 import com.work.motionanalysiscamera.R
 import com.work.motionanalysiscamera.base.BaseActivity
 import com.work.motionanalysiscamera.databinding.ActivityMainBinding
@@ -18,7 +21,6 @@ import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 typealias LumaListener = (luma: Double) -> Unit
 
@@ -35,21 +37,17 @@ class MotionAnalysisCamera :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (allPermissionsGranted()) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-            )
-        }
+//        if (allPermissionsGranted()) {
+//            startCamera()
+//        } else {
+//            ActivityCompat.requestPermissions(
+//                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+//            )
+//        }
+//>
 
-        binding.cameraCaptureButton.setOnClickListener {
-            takePhoto()
-        }
+        dispatchTakePictureIntent()
 
-        outputDirectory = getOutputDirectory()
-
-        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     override fun onRequestPermissionsResult(
@@ -205,7 +203,23 @@ class MotionAnalysisCamera :
                     Log.d(TAG, msg)
                 }
             })
+    }
 
+    private fun dispatchTakePictureIntent() {
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
+            takePictureIntent.resolveActivity(packageManager)?.also {
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            val imageBitmap = data?.extras?.get("data") as Bitmap
+
+            binding.viewFinder.drawToBitmap(imageBitmap.config)
+        }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -217,6 +231,7 @@ class MotionAnalysisCamera :
         private const val TAG = "CameraXBasic"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
+        private const val REQUEST_IMAGE_CAPTURE = 1
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 }
