@@ -11,6 +11,7 @@ buildscript {
     ext.navigation_version = "2.2.0-beta01"
     ext.camerax_version = "1.0.0-beta03"
     ext.camerax_view_version = "1.0.0-alpha10"
+    ext.glide_version = "4.9.0"
 
     repositories {
         google()

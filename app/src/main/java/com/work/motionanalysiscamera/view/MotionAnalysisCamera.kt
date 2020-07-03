@@ -1,18 +1,17 @@
 package com.work.motionanalysiscamera.view
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.drawToBitmap
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.work.motionanalysiscamera.R
 import com.work.motionanalysiscamera.base.BaseActivity
 import com.work.motionanalysiscamera.databinding.ActivityMainBinding
@@ -21,6 +20,7 @@ import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 typealias LumaListener = (luma: Double) -> Unit
 
@@ -37,16 +37,20 @@ class MotionAnalysisCamera :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-//        if (allPermissionsGranted()) {
-//            startCamera()
-//        } else {
-//            ActivityCompat.requestPermissions(
-//                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-//            )
-//        }
-//>
+        if (allPermissionsGranted()) {
+            startCamera()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            )
+        }
+        binding.cameraCaptureButton.setOnClickListener {
+            takePhoto()
+        }
 
-        dispatchTakePictureIntent()
+        outputDirectory = getOutputDirectory()
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
 
     }
 
@@ -70,66 +74,16 @@ class MotionAnalysisCamera :
 
     }
 
+    //미디어에 파일 만드는곳 그리고 거기에 저장된 파일 리턴.
     fun getOutputDirectory(): File {
-
         val mediaDir = externalMediaDirs.firstOrNull()?.let {
             File(it, resources.getString(R.string.app_name)).apply { mkdir() }
         }
         return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
     }
 
-//    private fun startCamera() {
-//
-//        //bindToLifecycle(LifecycleOwner, CameraSelector, UseCase...) - 리소스가 무거운경우
-//        //getInstance(this) - 리소스가 가벼운경우
-//
-////        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-////
-////
-////        cameraProviderFuture.addListener(
-////            Runnable {
-////                // Used to bind the lifecycle of cameras to the lifecycle owner
-////                val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-////
-////                //A use case that provides a camera preview stream for displaying on-screen.
-////                // 화면에 카메라 화면을 보여주는거같은듯.
-////                preview = Preview.Builder()
-////                    .build()
-////
-////                //A set of requirements and priorities used to select a camera.
-////                //글쌔 카메라 렌즈 타입인거같은데.
-////                //* Requires a camera with the specified lens facing.
-////                //         *
-////                //         * <p>Valid values for lens facing are {@link CameraSelector#LENS_FACING_FRONT} and
-////                //         * {@link CameraSelector#LENS_FACING_BACK}.
-////                //2가지인듯
-////
-////                //select back camera
-////                val cameraSelector =
-////                    CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-////                        .build()
-////
-////                try {
-////
-////                    // Unbind use cases before rebinding
-////                    cameraProvider.unbindAll()
-////
-////                    camera = cameraProvider.bindToLifecycle(
-////                        this, cameraSelector, preview
-////                    )
-////                    preview?.setSurfaceProvider(viewFinder.createSurfaceProvider())
-////
-////                } catch (exc: Exception) {
-////                    Log.e(TAG, "Use case binding failed", exc)
-////                }
-////
-////            }, ContextCompat.getMainExecutor(this)
-////        )
-//
-//
-//    }
-
     private fun startCamera() {
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener(Runnable {
@@ -183,6 +137,7 @@ class MotionAnalysisCamera :
             ).format(System.currentTimeMillis()) + ".jpg"
         )
 
+
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
@@ -197,30 +152,24 @@ class MotionAnalysisCamera :
                 }
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+
+                    Glide.with(this@MotionAnalysisCamera)
+                        .load(photoFile)
+                        .error(R.drawable.ic_no_picture)
+                        .apply(RequestOptions.circleCropTransform())
+                        .into(binding.ibPreview)
+
+
                     val savedUri = Uri.fromFile(photoFile)
                     val msg = "Photo capture succeeded: $savedUri"
+
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
                 }
             })
+
     }
 
-    private fun dispatchTakePictureIntent() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
-            takePictureIntent.resolveActivity(packageManager)?.also {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            val imageBitmap = data?.extras?.get("data") as Bitmap
-
-            binding.viewFinder.drawToBitmap(imageBitmap.config)
-        }
-    }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
