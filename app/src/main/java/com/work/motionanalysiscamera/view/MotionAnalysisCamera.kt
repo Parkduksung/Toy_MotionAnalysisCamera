@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -13,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.work.motionanalysiscamera.R
+import com.work.motionanalysiscamera.adapter.PictureAdapter
 import com.work.motionanalysiscamera.base.BaseActivity
 import com.work.motionanalysiscamera.databinding.ActivityMainBinding
 import java.io.File
@@ -32,10 +34,14 @@ class MotionAnalysisCamera :
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
 
+    private val pictureAdapter by lazy { PictureAdapter() }
+
     private lateinit var outputDirectory: File
     private lateinit var cameraExecutor: ExecutorService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        binding.viewFinder.bringToFront()
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -48,10 +54,19 @@ class MotionAnalysisCamera :
             takePhoto()
         }
 
+        binding.rvPicture.run {
+            this.adapter = pictureAdapter
+        }
+
         outputDirectory = getOutputDirectory()
-
         cameraExecutor = Executors.newSingleThreadExecutor()
-
+//
+        binding.ibPreview.setOnClickListener {
+            togglePicture(true)
+            outputDirectory.listFiles()?.let {
+                pictureAdapter.addAll(it.toList())
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -73,6 +88,14 @@ class MotionAnalysisCamera :
         }
 
     }
+
+    fun togglePicture(isVisible: Boolean) {
+        binding.apply {
+            rvPicture.visibility = if (isVisible) View.VISIBLE else View.GONE
+            viewFinder.visibility = if (isVisible) View.GONE else View.VISIBLE
+        }
+    }
+
 
     //미디어에 파일 만드는곳 그리고 거기에 저장된 파일 리턴.
     fun getOutputDirectory(): File {
