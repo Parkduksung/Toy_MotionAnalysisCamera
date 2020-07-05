@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/fragment_camera">
+
+    <fragment
+        android:id="@+id/fragment_camera"
+        android:name="com.work.motionanalysiscamera.view.camera.CameraFragment"
+        android:label="fragment_camera"
+        tools:layout="@layout/fragment_camera">
+
+        <action
+            android:id="@+id/action_fragment_camera_to_fragment_preview"
+            app:destination="@id/fragment_preview" />
+        <action
+            android:id="@+id/action_fragment_camera_to_fragment_video"
+            app:destination="@id/fragment_video" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_preview"
+        android:name="com.work.motionanalysiscamera.view.preview.PreviewFragment"
+        android:label="fragment_preview"
+        tools:layout="@layout/fragment_preview">
+
+        <action
+            android:id="@+id/action_fragment_preview_to_fragment_video"
+            app:destination="@id/fragment_video" />
+        <action
+            android:id="@+id/action_fragment_preview_to_fragment_camera"
+            app:destination="@id/fragment_camera" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_video"
+        android:name="com.work.motionanalysiscamera.view.video.VideoFragment"
+        android:label="fragment_video"
+        tools:layout="@layout/fragment_video">
+
+        <action
+            android:id="@+id/action_fragment_video_to_fragment_camera"
+            app:destination="@id/fragment_camera" />
+        <action
+            android:id="@+id/action_fragment_video_to_fragment_preview"
+            app:destination="@id/fragment_preview" />
+    </fragment>
+
+</navigation>
