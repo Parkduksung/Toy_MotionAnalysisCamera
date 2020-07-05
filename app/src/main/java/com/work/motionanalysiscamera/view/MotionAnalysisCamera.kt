@@ -1,7 +1,6 @@
 package com.work.motionanalysiscamera.view
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -9,85 +8,85 @@ import android.view.View
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.PagerSnapHelper
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
+import com.gun0912.tedpermission.PermissionListener
+import com.gun0912.tedpermission.TedPermission
 import com.work.motionanalysiscamera.R
 import com.work.motionanalysiscamera.adapter.PictureAdapter
 import com.work.motionanalysiscamera.base.BaseActivity
 import com.work.motionanalysiscamera.databinding.ActivityMainBinding
 import java.io.File
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-
-typealias LumaListener = (luma: Double) -> Unit
 
 class MotionAnalysisCamera :
-    BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate, R.layout.activity_main) {
+    BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate, R.layout.activity_main),
+    View.OnClickListener {
 
     private var preview: Preview? = null
     private var imageCapture: ImageCapture? = null
-    private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
-
     private val pictureAdapter by lazy { PictureAdapter() }
 
     private lateinit var outputDirectory: File
-    private lateinit var cameraExecutor: ExecutorService
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
-        binding.viewFinder.bringToFront()
-
-        if (allPermissionsGranted()) {
-            startCamera()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-            )
-        }
-        binding.cameraCaptureButton.setOnClickListener {
-            takePhoto()
-        }
-
-        binding.rvPicture.run {
-            this.adapter = pictureAdapter
-        }
-
-        outputDirectory = getOutputDirectory()
-        cameraExecutor = Executors.newSingleThreadExecutor()
-//
-        binding.ibPreview.setOnClickListener {
-            togglePicture(true)
-            outputDirectory.listFiles()?.let {
-                pictureAdapter.addAll(it.toList())
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
+    private val permissionListener: PermissionListener by lazy {
+        object : PermissionListener {
+            override fun onPermissionGranted() {
                 startCamera()
-            } else {
-                Toast.makeText(
-                    this,
-                    "Permissions not granted by the user.",
-                    Toast.LENGTH_SHORT
-                ).show()
+            }
+
+            override fun onPermissionDenied(deniedPermissions: ArrayList<String>?) {
                 finish()
             }
         }
-
     }
+
+    override fun onClick(v: View?) {
+        when (v?.id) {
+            R.id.camera_capture_button -> {
+                takePhoto()
+            }
+
+            R.id.ib_preview -> {
+                togglePicture(true)
+                outputDirectory.listFiles()?.let {
+                    pictureAdapter.addAll(it.toList().sortedDescending())
+                }
+            }
+        }
+    }
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        checkPermission()
+
+        binding.cameraCaptureButton.setOnClickListener(this)
+        binding.ibPreview.setOnClickListener(this)
+
+        binding.rvPicture.run {
+            this.adapter = pictureAdapter
+            PagerSnapHelper().attachToRecyclerView(this)
+        }
+
+        outputDirectory = getOutputDirectory()
+
+        if (outputDirectory.listFiles()?.size != 0) {
+            outputDirectory.listFiles()?.toList()?.sortedDescending()?.get(0).let {
+                Glide.with(this@MotionAnalysisCamera)
+                    .load(it)
+                    .error(R.drawable.ic_no_picture)
+                    .apply(RequestOptions.circleCropTransform())
+                    .into(binding.ibPreview)
+            }
+        }
+    }
+
 
     fun togglePicture(isVisible: Boolean) {
         binding.apply {
@@ -107,7 +106,8 @@ class MotionAnalysisCamera :
 
     private fun startCamera() {
 
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        val cameraProviderFuture =
+            ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener(Runnable {
             // Used to bind the lifecycle of cameras to the lifecycle owner
@@ -122,13 +122,6 @@ class MotionAnalysisCamera :
                 .build()
 
 
-            imageAnalyzer = ImageAnalysis.Builder()
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
-                        Log.d(TAG, "Average luminosity: $luma")
-                    })
-                }
             // Select back camera
             val cameraSelector =
                 CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
@@ -139,7 +132,7 @@ class MotionAnalysisCamera :
 
                 // Bind use cases to camera
                 camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer
+                    this, cameraSelector, preview, imageCapture
                 )
                 preview?.setSurfaceProvider(binding.viewFinder.createSurfaceProvider(camera?.cameraInfo))
             } catch (exc: Exception) {
@@ -190,42 +183,21 @@ class MotionAnalysisCamera :
                     Log.d(TAG, msg)
                 }
             })
-
     }
 
-
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    private fun checkPermission() {
+        TedPermission.with(this)
+            .setPermissionListener(permissionListener)
+            .setRationaleMessage("")
+            .setDeniedMessage("")
+            .setPermissions(Manifest.permission.CAMERA)
+            .check()
     }
-
 
     companion object {
         private const val TAG = "CameraXBasic"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private const val REQUEST_IMAGE_CAPTURE = 1
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
-    }
-}
-
-private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
-
-    private fun ByteBuffer.toByteArray(): ByteArray {
-        rewind()    // Rewind the buffer to zero
-        val data = ByteArray(remaining())
-        get(data)   // Copy the buffer into a byte array
-        return data // Return the byte array
-    }
-
-    override fun analyze(image: ImageProxy) {
-
-        val buffer = image.planes[0].buffer
-        val data = buffer.toByteArray()
-        val pixels = data.map { it.toInt() and 0xFF }
-        val luma = pixels.average()
-
-        listener(luma)
-
-        image.close()
     }
 }

@@ -63,4 +63,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$camerax_version"
     // CameraX View class
     implementation "androidx.camera:camera-view:$camerax_view_version"
+
+    //Ted_Permission
+    implementation 'gun0912.ted:tedpermission:2.0.0'
 }
