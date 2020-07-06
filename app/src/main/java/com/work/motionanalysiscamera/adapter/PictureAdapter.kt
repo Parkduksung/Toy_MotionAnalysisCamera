@@ -24,4 +24,5 @@ class PictureAdapter : RecyclerView.Adapter<PictureViewHolder>() {
         notifyDataSetChanged()
     }
 
+
 }

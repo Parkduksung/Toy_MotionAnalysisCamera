@@ -14,13 +14,10 @@ class PictureViewHolder(parent: ViewGroup, @LayoutRes private val layoutId: Int)
         LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
     ) {
 
-
     private val picture: ImageView = itemView.findViewById(R.id.iv_picture)
 
     fun bind(file: File) {
         Glide.with(itemView).load(file).into(picture)
-
     }
-
 
 }

@@ -84,6 +84,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(
                     .into(it)
             }
         }
+
+
     }
 
     private fun startCamera() {
@@ -133,6 +135,5 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(
         private const val TAG = "CameraFragment"
         private const val REQUIRED_PERMISSIONS = Manifest.permission.CAMERA
     }
-
 
 }

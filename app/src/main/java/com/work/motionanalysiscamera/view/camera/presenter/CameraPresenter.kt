@@ -28,6 +28,7 @@ class CameraPresenter(private val cameraView: CameraContract.View) : CameraContr
                 override fun onError(exc: ImageCaptureException) {
 
                 }
+
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     cameraView.showTakePhoto(photoFile)
                 }
