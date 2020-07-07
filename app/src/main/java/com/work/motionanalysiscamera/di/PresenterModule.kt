@@ -12,7 +12,7 @@ val presenterModule = module {
     }
 
     factory<PreviewContract.Presenter> { (view: PreviewContract.View) ->
-        PreviewPresenter(view, get())
+        PreviewPresenter(view, get(), get())
     }
 
 }

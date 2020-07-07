@@ -72,6 +72,8 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(
         binding.cameraCaptureButton.setOnClickListener(this)
         binding.ibPreview.setOnClickListener(this)
         outputDirectory = UtilFile.getDirectoryFile()
+
+
     }
 
     override fun showTakePhoto(saveFile: File) {
@@ -84,8 +86,6 @@ class CameraFragment : BaseFragment<FragmentCameraBinding>(
                     .into(it)
             }
         }
-
-
     }
 
     private fun startCamera() {

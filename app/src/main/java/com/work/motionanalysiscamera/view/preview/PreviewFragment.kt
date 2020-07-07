@@ -1,5 +1,6 @@
 package com.work.motionanalysiscamera.view.preview
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
 import androidx.navigation.Navigation
@@ -51,9 +52,11 @@ class PreviewFragment :
 
         UtilFile.getDirectoryFile().listFiles()?.toList()?.sortedDescending()?.let {
             pictureAdapter.addAll(it)
-            presenter.imageAnalysis(it[0])
+            presenter.faceDetection(it[0])
         }
     }
 
+    override fun showImage(bitmap: Bitmap) {
 
+    }
 }
