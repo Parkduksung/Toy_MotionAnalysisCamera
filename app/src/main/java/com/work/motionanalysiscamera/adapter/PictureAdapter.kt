@@ -24,5 +24,9 @@ class PictureAdapter : RecyclerView.Adapter<PictureViewHolder>() {
         notifyDataSetChanged()
     }
 
+    fun deleteItem(file: File) {
+        pictureList.remove(file)
+    }
+
 
 }

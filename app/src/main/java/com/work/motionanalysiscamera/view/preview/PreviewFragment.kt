@@ -3,10 +3,8 @@ package com.work.motionanalysiscamera.view.preview
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.navigation.Navigation
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.PagerSnapHelper
-import androidx.recyclerview.widget.RecyclerView
 import com.work.motionanalysiscamera.R
 import com.work.motionanalysiscamera.adapter.PictureAdapter
 import com.work.motionanalysiscamera.base.BaseFragment
@@ -18,7 +16,7 @@ import org.koin.core.parameter.parametersOf
 
 class PreviewFragment :
     BaseFragment<FragmentPreviewBinding>(FragmentPreviewBinding::bind, R.layout.fragment_preview),
-    PreviewContract.View {
+    PreviewContract.View, View.OnClickListener {
 
     private val pictureAdapter by lazy { PictureAdapter() }
 
@@ -29,26 +27,42 @@ class PreviewFragment :
             .navigate(R.id.action_fragment_preview_to_fragment_camera)
     }
 
+    override fun onClick(v: View?) {
+        when (v?.id) {
+            R.id.ib_delete -> {
+                UtilFile.getDirectoryFile().listFiles()?.toList()?.sortedDescending()?.let {
+                    if (it[CURRENT_POSITION].delete()) {
+                        Toast.makeText(requireContext(), "지워짐", Toast.LENGTH_SHORT).show()
+                        pictureAdapter.deleteItem(it[CURRENT_POSITION])
+                        pictureAdapter.notifyItemRemoved(CURRENT_POSITION)
+                    }
+                }
+            }
+
+            R.id.ib_back -> {
+                onBackPressed()
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         presenter = get { parametersOf(this) }
 
-        binding.rvPicture.run {
-            this.adapter = pictureAdapter
-            PagerSnapHelper().attachToRecyclerView(this)
+        val pageMarginPx = resources.getDimensionPixelOffset(R.dimen.pageMargin)
+        val pagerWidth = resources.getDimensionPixelOffset(R.dimen.pagerWidth)
+        val screenWidth = resources.displayMetrics.widthPixels
+        val offsetPx = screenWidth - pageMarginPx - pagerWidth
 
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    val currentAdapterPosition =
-                        (recyclerView.layoutManager as LinearLayoutManager).findFirstCompletelyVisibleItemPosition()
-
-                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        //to-do
-                    }
-                }
-            })
+        binding.vpPicture.run {
+            adapter = pictureAdapter
+            setPageTransformer { page, position ->
+                page.translationX = position * -offsetPx
+            }
         }
+
+        binding.ibBack.setOnClickListener(this)
+        binding.ibDelete.setOnClickListener(this)
 
         UtilFile.getDirectoryFile().listFiles()?.toList()?.sortedDescending()?.let {
             pictureAdapter.addAll(it)
@@ -57,6 +71,12 @@ class PreviewFragment :
     }
 
     override fun showImage(bitmap: Bitmap) {
+
+    }
+
+    companion object {
+
+        private var CURRENT_POSITION = 0
 
     }
 }
